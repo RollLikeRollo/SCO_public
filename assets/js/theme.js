@@ -102,7 +102,7 @@ $('#sidebarCollapse').on('click', function () {
 //     var sectionTo = $(this).attr('href');
 // 	$('html, body').stop().animate({
 //       scrollTop: $(sectionTo).offset().top - 120}, 1000, 'easeInOutExpo');
-// });
+// });  s
 
 /*-----------------------------
     Magnific Popup
