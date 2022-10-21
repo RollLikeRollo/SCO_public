@@ -54,7 +54,7 @@
 		<button id="sidebarCollapse" class="navbar-toggler d-block d-md-none" type="button"><span></span><span class="w-75"></span><span class="w-50"></span></button>
 		
 		<!-- Logo --> 
-        <a class="logo ml-md-3" href="index.html" title="RollLikeRollo"> <img src="assets/images/logo.png" height="50" alt="RollLikeRollo"/> </a> 
+        <a class="logo ml-md-3" href="index.html" title="RollLikeRollo"> <img src="assets/images/VUT-FIT-logo-en.png" height="50" alt="RollLikeRollo"/> </a> 
 		<span class="text-2 ml-2"></span> 
         <!-- Logo End -->
         
@@ -106,6 +106,8 @@
         <li class="nav-item"><a class="nav-link active" href="#sco_bash">SCO - Bash</a>
           <ul class="nav flex-column">
             <li class="nav-item"><a class="nav-link" href="#intro_bash">Introduction</a></li>
+            <li class="nav-item"><a class="nav-link" href="#suid">SUID bit exploit</a></li>
+            <li class="nav-item"><a class="nav-link" href="#enviroment">Environmental Variables</a></li>
           </ul>
       </ul>
     </div>
@@ -117,13 +119,167 @@
       <div >
         <h1 id="sco_bash">SCO - Bash</h1>
         <h2 id="intro_bash"> Introduction</h2>
-        <p class="lead">Bash is the default shell on most Linux distributions. It is a command line interpreter that allows you to execute commands on your system. Bash is a powerful tool that can be used to automate tasks and write scripts.</p>
+        <p class="lead">Bash is the default shell on most Linux distributions. 
+          It is a command line interpreter that allows you to execute commands on your system. Bash is a powerful tool that can be used to automate tasks and write scripts.</p>
         <p class="lead">This guide will cover the basics of Bash and how to use it to write scripts.</p>
+        <p>All examples are modified projects/programs/snippets of code collected from the Internet. 
+          Source is noted for each example. You can donwload the example repository
+        forom <a target="_blank" href="https://github.com/RollLikeRollo/SCO_shell_scripting">Github repository</a></p>
+
+        <h2 id="suid">SUID bit exploit</h2>
+
+        <p class="lead"><a target="_blank" href="https://github.com/RollLikeRollo/SCO_shell_scripting/tree/main/environment_var">Github repository directory with the example</a></p>
+        <p >The SUID (Set User ID) bit is a special permission that can be set on a file in Linux. When a file has the SUID bit set, it will run with the permissions of the file's owner instead of the user who ran the file. This can be used to escalate privileges.</p>
+        <p> Privilege escalation is demonstrated on following example:        </p>
+
+
+        <div>
+          <p> Let's assume, that compiled <code>get_root.c</code> has the SUID bit set. Then, when the program is run, it sets IDs to variables using functions
+          <code>getuid()</code> and <code>geteuid()</code> Then on lines 18 and 19, the root user is is set as the user, who originally executed the program. Now, new processes
+        can be opend from this program, each of them running as root user. This fact is xploited on line 22, where program <code>get_in.sh</code> is executed. In this case,
+      <code>get_in.sh</code> open new terminal as root. </p>
+        </div>
+
+        <div class="accordion" id="accordionD1">
+          <div class="card">
+            <div class="card-header" id="headingTwo">
+              <h5 class="mb-0"> <a href="#" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">get_in.sh</a> </h5>
+            </div>
+            <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionD1">
+              <div class="card-body">  
+                <pre><code class="bash">
+/bin/bash -i
+                </code></pre>
+              </div>
+            </div>  
+          </div>
+
+        <div class="accordion" id="accordionDefault">
+          <div class="card">
+            <div class="card-header" id="headingOne">
+              <h5 class="mb-0"> <a href="#" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">get_root.c</a> </h5>
+            </div>
+            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionDefault">
+              <div class="card-body">  <pre><code class="c">
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main(void) {
+// store the uids
+uid_t ruid = getuid();
+uid_t euid = geteuid();
+// store the gids
+gid_t rgid = getgid();
+gid_t egid = getegid();
+              
+printf("Before execution UID: %d and EUID: %d\n", ruid, euid);
+printf("Before execution GID: %d and EGID: %d\n", rgid, egid);
+              
+// elevate the privileges
+setuid(euid);
+setgid(egid);
+              
+// perform action
+system("/bin/bash get_in.sh");
+              
+// drop privileges
+if (setuid(ruid)) {
+  fprintf(stderr, "Drop user privileges setuid(%d) failed!\n", ruid);
+}
+if (setgid(rgid)) {
+  fprintf(stderr, "Drop group privileges setgid(%d) failed!\n", rgid);
+}
+              
+printf("After execution UID: %d and EUID: %d\n", getuid(), geteuid());
+printf("After execution GID: %d and EGID: %d\n", getgid(), getegid());
+printf("Completed! Check output in /tmp/output\n");
+return 0;
+}
+                    </code></pre></div>
+            </div>
+          </div>
+        </div>
+
         
+
+
+
+        </section>
+
+        <div>
+          <p>
+            Because it is needed to be root in order to set the SUID bit, attacker does not create new programs, but he searches for vulnerable programs on the system.
+            These can be found using:
+          </p>
+        </div>
+        <div class="accordion" id="accordionfindvul">
+          <div class="card">
+            <div class="card-header" id="headingThree">
+              <h5 class="mb-0"> <a href="#" data-toggle="collapse" data-target="#collapseThree" aria-expanded="true" aria-controls="collapseThree">find SUID bit programs in system</a> </h5>
+            </div>
+            <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionfindvul">
+              <div class="card-body">  
+                <pre><code class="bash">
+find / -type f -perm -4001 -exec 
+ls -h {} \; 2 > /dev/null
+                </code></pre>
+              </div>
+            </div>  
+          </div>
+        </div>
+        <div>
+          <p>
+            When any of these found programs is not coded securly, and contains dangerous call of system function (for example: <code>system(ls)</code> místo system(/bin/ls)</code>,
+             it can be exploited using environmental variables - more on that in <a class="" href="#enviroment">next chapter</a>.
+          </p>
+        </div>
       </div>
-      
+      <h2 id="enviroment"> Environmental Variables</h2>
+      <p>
+        Environmental variables are variables in the environment of the running process. 
+        Because they are set for the entire environment in which individual processes run, processes use these variables for their activity.
+      </p>
+      <p>
+        If the PATH variable is overwritten (by a program or a user) in the running shell process, then it can substitute its own code for another, legitimate and similarly named program.
+        A program or user with administrator rights can then unwittingly start an attacker's code.
+        This can happen in two cases:
+        <ol>
+          <li>Suppose there is a situation where the currently open directory is added to the PATH variable (by the command <code>export PATH = .: $ PATH</code>).
+            If there is a program with the name <code>ping</code> in the current open folder, and the user writes ping to the command line, the malicious code will be executed.
+            To start the legitimate instance of <code>ping</code>, it must be started as <code>/bin/ping</code>. </li>
+            <li>Suppose there is a situation where the currently open directory is added to the PATH variable (by the command <code>export PATH = .: $ PATH</code>).
+              If there is a program with the name <code>ping</code> in the current open folder, and a program with the SUID flag set is started, whose owner is root, and which calls <code>system(ping)</code>,
+               the attacker's program is executed with root privileges.
+            Therefore, it is important to be carefull when opening new processes in programs with the SUID flag set.</li>
+        </ol> 
+        The situation looks like this in the terminal:
+      </p>
+      <div class="accordion" id="accordion4">
+        <div class="card">
+          <div class="card-header" id="heading4">
+            <h5 class="mb-0"> <a href="#" data-toggle="collapse" data-target="#collapse4" aria-expanded="true" aria-controls="collapse4">Terminal example</a> </h5>
+          </div>
+          <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordion4">
+            <div class="card-body">  
+              <pre><code class="bash">
+$ ping 1.1.1.1
+PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
+64 bytes from 1.1.1.1
+64 bytes from 1.1.1.1
+.
+.
+.
+$ export PATH=.:$PATH
+$ ping 1.1.1.1
+I am a virus!!!!!
+              </code></pre>
+            </div>
+          </div>  
+        </div>
+      </div>
     </div>
-	
   </div>
   <!-- Content end --> 
   

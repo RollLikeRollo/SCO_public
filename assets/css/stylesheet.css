@@ -134,6 +134,7 @@ code {
   padding: 2px 5px;
   background-color: #f9f2f4;
   border-radius: 4px;
+  content: counter(listing) ". ";
 }
 
 form {
@@ -200,6 +201,7 @@ h2 {
 
 dl, ol, ul, pre, blockquote, .table {
   margin-bottom: 1.8rem;
+  content: counter(listing) ". ";
 }
 
 /*=== Highlight Js ===*/
